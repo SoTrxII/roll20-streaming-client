@@ -60,7 +60,7 @@ export class RemoteCommandReceiver implements RemoteCommandReceiverAPI {
 
       const returnPayload: RedisMessage = {
         data: null,
-        campaignRoll2OIds: message.campaignRoll2OIds,
+        campaignRoll20Ids: message.campaignRoll20Ids,
         campaignId: message.campaignId,
         hasError: hasError
       };
@@ -74,7 +74,7 @@ export class RemoteCommandReceiver implements RemoteCommandReceiverAPI {
       }
       const returnPayload: RedisMessage = {
         data: null,
-        campaignRoll2OIds: message.campaignRoll2OIds,
+        campaignRoll20Ids: message.campaignRoll20Ids,
         campaignId: message.campaignId,
         hasError: hasError
       };

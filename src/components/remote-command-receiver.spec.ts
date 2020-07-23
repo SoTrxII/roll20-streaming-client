@@ -21,7 +21,7 @@ describe("Remote Command Receiver", () => {
       const message: RedisMessage = {
         hasError: false,
         campaignId: String(99),
-        campaignRoll2OIds: ["2883710"],
+        campaignRoll20Ids: ["2883710"],
         data: { gameUrl: "https://app.roll20.net/join/2883710/mEiLZw" }
       };
       redis.publish(SubChannels.StartStreaming, message);
@@ -64,7 +64,7 @@ describe("Remote Command Receiver", () => {
       const message: RedisMessage = {
         hasError: false,
         campaignId: String(99),
-        campaignRoll2OIds: ["2883710"],
+        campaignRoll20Ids: ["2883710"],
         data: { gameUrl: "https://app.roll20.net/join/2883710/mEiLZw" }
       };
       redis.publish(SubChannels.StartStreaming, message);
