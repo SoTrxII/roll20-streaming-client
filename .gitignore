@@ -1,0 +1,16 @@
+output.*
+config.json
+*.mp4
+*.mpg
+*.mp3
+node_modules/
+database/database_*
+*.png
+*.gif
+ex_*
+yarn-error.log
+.vscode
+.idea
+dist/
+.idea/
+*.snippet*

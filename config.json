@@ -1,0 +1,10 @@
+{
+  "Roll20": {
+    "login": "ruby.saltprincess@gmail.com",
+    "password": "dQF3/Feu8]MMBrqR"
+  },
+  "Redis": {
+    "host": "localhost",
+    "lazyConnect": true
+  }
+}
