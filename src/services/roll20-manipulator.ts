@@ -5,6 +5,7 @@ import * as debug0 from "debug";
 import { Roll20ManipulatorAPI } from "../@types/roll20-manipulator-API";
 import { injectable } from "inversify";
 import { tmpdir } from "os";
+import { Roll20AppWindow } from "../@types/roll20-app-window";
 
 const debug = debug0("manipulator");
 
@@ -155,10 +156,11 @@ export class Roll20Manipulator extends EventEmitter
     // By default, cameras are normal-sized and we're not sending
     // any audio/video to other players
     await Promise.all([
+      this.injectLullaby(),
+      this.changeVolume(100),
       this.changeCameraSetting(CameraSettings.REGULAR),
       this.changeDisplayToOthers(DisplayToOthersSetting.NONE),
-      this.hideOwnCamera(),
-      this.injectLullaby()
+      this.hideOwnCamera()
     ]);
     await this.refreshRTC();
   }
@@ -189,6 +191,14 @@ export class Roll20Manipulator extends EventEmitter
    */
   async changeCameraSetting(setting: CameraSettings): Promise<void> {
     await this.page.select("select#videoplayersize", setting);
+  }
+
+  async changeVolume(volume: number): Promise<void> {
+    await this.page.evaluate(volume => {
+      ((window as unknown) as Roll20AppWindow).currentPlayer.save({
+        globalvolume: volume.toString()
+      });
+    }, volume);
   }
 
   /**
