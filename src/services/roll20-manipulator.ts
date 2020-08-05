@@ -40,6 +40,8 @@ export interface Roll20ManipulatorOptions {
   defaultVolume?: number;
 }
 
+class ZoomError extends Error {}
+
 /**
  * Handling of the interaction with the roll20 website
  */
@@ -54,6 +56,7 @@ export class Roll20Manipulator extends EventEmitter
   private isBrowserInitialized = false;
   private browser: Browser;
   private page: Page;
+  private currentZoomLevel: number;
 
   /**
    * @param {Object} account Roll20 Account
@@ -158,9 +161,12 @@ export class Roll20Manipulator extends EventEmitter
     await Promise.all([
       this.injectLullaby(),
       this.changeVolume(100),
-      this.changeCameraSetting(CameraSettings.REGULAR),
+      this.changeCameraSetting(CameraSettings.SMALL),
       this.changeDisplayToOthers(DisplayToOthersSetting.NONE),
-      this.hideOwnCamera()
+      this.hideOwnCamera(),
+      this.hideFloatingToolbar(),
+      this.transformSideBar(),
+      this.hideZoomToggle()
     ]);
     await this.refreshRTC();
   }
@@ -200,6 +206,26 @@ export class Roll20Manipulator extends EventEmitter
       });
     }, volume);
   }
+  async getZoomLevel(): Promise<number> {
+    if (!this.currentZoomLevel) {
+      const zoomPercentage: string = (await this.page.evaluate(() => {
+        return $("#zoomclick .zoomValue").text();
+      })) as string;
+      this.currentZoomLevel = Number(zoomPercentage.trim().replace("%", ""));
+    }
+    return this.currentZoomLevel;
+  }
+
+  async changeZoomLevel(targetZoomLevel: number): Promise<void> {
+    if (targetZoomLevel < 10 || targetZoomLevel > 256) {
+      throw new ZoomError("Invalid zoom level provided");
+    }
+    await this.page.evaluate((targetZoomLevel) => {
+      $("#zoomslider")
+        .data("uiSlider")
+        .options.slide(null, { value: targetZoomLevel });
+    }, targetZoomLevel);
+  }
 
   /**
    * Change video/audio data ent via roll20 RTC
@@ -214,12 +240,173 @@ export class Roll20Manipulator extends EventEmitter
    */
   async refreshRTC(): Promise<void> {
     await this.page.evaluate(() => {
-      //We can supress the compilation error, as JQuery is defined
-      //in the client side
-      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-      // @ts-ignore
-      $("#videoreconnect").click();
+      $("#videoreconnect").trigger("click");
     });
+  }
+
+  /**
+   * Hide the left floating toolbar in R20 UI
+   */
+  async hideFloatingToolbar(): Promise<void> {
+    await this.page.evaluate(() => {
+      $("#floatingtoolbar").hide(0);
+    });
+  }
+  async hideZoomToggle(): Promise<void> {
+    await this.page.evaluate(() => {
+      $("#zoomclick").hide(0);
+    });
+  }
+
+  async transformSideBar(): Promise<void> {
+    await this.page.evaluate(
+      (screenWidth, screenHeight) => {
+        const sidebar = $("#rightsidebar");
+        // Hide all controls and menus
+        $("#textchat-input").hide();
+        sidebar.find("ul").hide();
+        $("#sidebarcontrol").hide();
+
+        //Overlay the sidebar with the rest of the screen, hiding scroll bars
+        sidebar.css({
+          "background-color": "transparent",
+          background: "none",
+          "z-index": 2000,
+          "border-left": "none",
+          "backdrop-filter": "blur(0.7px)"
+        });
+        $("#editor-wrapper").css({
+          width: `${screenWidth}px`,
+          overflow: "hidden"
+        });
+        $("#playerzone").css({ width: `${screenHeight}px` });
+        $("#body").css("overflow", "hidden");
+        $(".textchatcontainer").css({
+          overflow: "hidden",
+          "font-size": "14px",
+          color: "white",
+          "text-shadow": "0px 0px 3px #000, -1px -1px #000, 1px 1px #000"
+        });
+        function applyChatStyle() {
+          const rollsMessagesAndSpacesSelectors = [
+            // System messages
+            ".textchatcontainer .message.system .spacer",
+            // Players messages
+            ".textchatcontainer .message",
+            // Spaces between messages
+            ".textchatcontainer .message .spacer",
+            // Dice "regex" (1d100..)
+            ".textchatcontainer .formula",
+            // Dice results
+            ".textchatcontainer .rolled",
+            // Destructured formula (i.e 1d100 +2 = ...)
+            ".textchatcontainer .message .formula"
+          ];
+          $(rollsMessagesAndSpacesSelectors.join(",")).css({
+            "background-color": "transparent",
+            background: "transparent",
+            border: "none",
+            "mix-blend-mode": "difference",
+            color: "white"
+          });
+        }
+
+        //Remove system message (R20 welcome message)
+        $(".message.system").remove();
+
+        //Adding shadow to avatars
+        $(".textchatcontainer .avatar").css({
+          "box-shadow": "#ccc 1px 1px 6px 1px"
+        });
+        // A white Background is hard-coded when a text message is received. Overrides that.
+        new MutationObserver(() => applyChatStyle()).observe(
+          document.querySelector(".textchatcontainer .content"),
+          {
+            childList: true
+          }
+        );
+        //Hide the "sidebar" to trigger a redraw for the canvas to gain width, and then redraw the jukebox and chat
+        $("#sidebarcontrol").trigger("click");
+        $("body").toggleClass("sidebarhidden");
+
+        //Scroll to bottom of chat
+        const chat = $("#textchat");
+        chat.scrollTop(chat.prop("scrollHeight"));
+        //Make all non-text elements in the text chat see-through
+        applyChatStyle();
+        const element_jukebox = $("#jukebox");
+        //Reverse jukebox and chat order to put jukebox on top
+        element_jukebox.insertBefore("#textchat");
+
+        //Delete everything except the song progress meter in the jukebox div
+        element_jukebox
+          .find(".content :not(#jukeboxwhatsplaying, #jukeboxwhatsplaying *)")
+          .remove();
+
+        // Apply new color scheme and text shadows
+        element_jukebox.find("h4").css({
+          "font-size": "14px",
+          color: "white",
+          "text-shadow": "0px 0px 3px #000, -1px -1px #000, 1px 1px #000"
+        });
+        //Jukebox is higher than the chat
+        element_jukebox.css({
+          "z-index": 2005,
+          overflow: "hidden"
+        });
+        function moveChatToBottomLeft() {
+          $("#textchat")
+            .position({
+              my: "bottom right",
+              at: "bottom right",
+              of: "#rightsidebar"
+            })
+            .css({
+              "margin-top": "125px",
+              top: "-125px"
+            });
+        }
+        //Every now ad then, R20 is correcting the chat placement, we have to put it back in place
+        new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutationRecord) {
+            element_jukebox.css({
+              display: "block"
+            });
+            moveChatToBottomLeft();
+          });
+        }).observe(element_jukebox[0], {
+          attributes: true,
+          attributeFilter: ["style"]
+        });
+        function applyStyleToJukebox() {
+          element_jukebox.find("h4").css({
+            "font-size": "14px",
+            color: "white",
+            "text-shadow": "0px 0px 3px #000, -1px -1px #000, 1px 1px #000"
+          });
+        }
+        //Reapply style to modified jukebox when a new song is added,
+        //as R20 basically destroys and rebuilds it
+        new MutationObserver(() => applyStyleToJukebox()).observe(
+          element_jukebox.find("#jukeboxwhatsplaying")[0],
+          {
+            childList: true
+          }
+        );
+        moveChatToBottomLeft();
+        applyStyleToJukebox();
+
+        // Display Jukebox and chat at the same time by reducing the absolute height of the Jukebox to the bare minimum
+        element_jukebox.css({
+          display: "block",
+          height: `${Math.max(Math.floor(screenHeight / 4.8), 150)}px`,
+          top: "0px",
+          right: "10px"
+        });
+      },
+      this.options.screenSize[0],
+      this.options.screenSize[1]
+    );
   }
 
   /**

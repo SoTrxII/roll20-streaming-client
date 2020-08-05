@@ -27,7 +27,8 @@
       "reflect-metadata",
       "node",
       "jest",
-      "jquery"
+      "jquery",
+      "jqueryui"
     ],
     "typeRoots": [
       "node_modules/@types",

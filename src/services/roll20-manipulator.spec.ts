@@ -142,4 +142,29 @@ describe("Roll20-manipulator", () => {
       roll2OManipulator.closeBrowser();
     });
   });
+  describe("Ajusting the zoom", () => {
+    beforeAll(async () => {
+      roll2OManipulator = new roll20ManipulatorConstructor(
+        roll20Account,
+        manipulatorOptions
+      );
+      await roll2OManipulator.initializeBrowser();
+      await roll2OManipulator.login();
+      await roll2OManipulator.joinGame(SAMPLE_GAME_LINK);
+      await roll2OManipulator.setupStreamingSetting();
+    }, 80000);
+    it("Should be able to get the current zoom level", async () => {
+      const zLvl = await roll2OManipulator.getZoomLevel();
+      console.log(zLvl);
+    }, 60000);
+    it("Should be able to change the current zoom level", async () => {
+      const zLvl = await roll2OManipulator.getZoomLevel();
+      await roll2OManipulator.changeZoomLevel(zLvl + 50);
+      await new Promise((res, rej) => setTimeout(() => res(), 10000));
+      await roll2OManipulator.changeZoomLevel(zLvl);
+    }, 100000);
+    afterEach(() => {
+      //roll2OManipulator.closeBrowser();
+    });
+  });
 });
