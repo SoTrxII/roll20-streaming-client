@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "main": "index.js",
   "repository": "git@gitlab.com:SoTrx/roll-20-client.git",
-  "author": "lucas <lucas.peirone@free.fr>",
   "license": "MIT",
   "scripts": {
     "pretest": "./node_modules/.bin/jest --clearCache",

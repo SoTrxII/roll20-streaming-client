@@ -7,6 +7,7 @@ import { RecorderAPI } from "../@types/recorder";
 import { Roll20Account } from "../services/roll20-manipulator";
 import { Roll20ClientAPI } from "../@types/roll20-client-API";
 import Newable = interfaces.Newable;
+import {BoundingBox} from "puppeteer";
 
 export interface Roll20ClientOptions {
   screenSize?: [number, number];
@@ -17,7 +18,7 @@ export interface Roll20ClientOptions {
   headless?: boolean;
   sinkName?: string;
 }
-
+class InvalidClientStateError extends Error {}
 @injectable()
 export class Roll20Client implements Roll20ClientAPI {
   private recordingLock = new Mutex();
@@ -106,6 +107,13 @@ export class Roll20Client implements Roll20ClientAPI {
     }
   }
 
+  async coverArea(target: BoundingBox): Promise<void> {
+    if (!this.isRecording)
+      throw new InvalidClientStateError(
+        "Cannot change area recorder while not recording !"
+      );
+    await this.roll20Service.coverArea(target);
+  }
   private async _startStreamingGame(gameUrl: string): Promise<void> {
     if (this.isRecording) {
       await this._stopStreamingGame();

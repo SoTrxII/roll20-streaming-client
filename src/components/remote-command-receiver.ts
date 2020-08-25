@@ -9,7 +9,8 @@ import { RedisMessage } from "../@types/redis-message";
 
 export enum SubChannels {
   StartStreaming = "startStreamingRoll20Game",
-  StopStreaming = "stopStreamingRoll20Game"
+  StopStreaming = "stopStreamingRoll20Game",
+  MovePlayingField = "MoveRoll20RecordedFieldArea"
 }
 
 export enum PubChannels {
@@ -51,34 +52,52 @@ export class RemoteCommandReceiver implements RemoteCommandReceiverAPI {
     console.log("MESSAGE");
     console.log(channel);
     if (channel === SubChannels.StartStreaming) {
-      let hasError = false;
-      try {
-        await this.roll2OClient.startStreamingGame(message.data.gameUrl);
-      } catch (e) {
-        hasError = true;
-      }
-
-      const returnPayload: RedisMessage = {
-        data: null,
-        campaignRoll20Ids: message.campaignRoll20Ids,
-        campaignId: message.campaignId,
-        hasError: hasError
-      };
-      this.redis.publish(PubChannels.StreamingBegan, returnPayload);
+      await this.startStreaming(message);
     } else if (channel === SubChannels.StopStreaming) {
-      let hasError = false;
-      try {
-        await this.roll2OClient.stopStreamingGame();
-      } catch (e) {
-        hasError = true;
-      }
-      const returnPayload: RedisMessage = {
-        data: null,
-        campaignRoll20Ids: message.campaignRoll20Ids,
-        campaignId: message.campaignId,
-        hasError: hasError
-      };
-      this.redis.publish(PubChannels.StreamingStopped, returnPayload);
+      await this.stopStreaming(message);
+    }
+  }
+
+  private async startStreaming(message: RedisMessage): Promise<void> {
+    let hasError = false;
+    try {
+      await this.roll2OClient.startStreamingGame(message.data.gameUrl);
+    } catch (e) {
+      hasError = true;
+    }
+
+    const returnPayload: RedisMessage = {
+      data: null,
+      campaignRoll20Ids: message.campaignRoll20Ids,
+      campaignId: message.campaignId,
+      hasError: hasError
+    };
+    this.redis.publish(PubChannels.StreamingBegan, returnPayload);
+  }
+
+  private async stopStreaming(message: RedisMessage): Promise<void> {
+    let hasError = false;
+    try {
+      await this.roll2OClient.stopStreamingGame();
+    } catch (e) {
+      hasError = true;
+    }
+    const returnPayload: RedisMessage = {
+      data: null,
+      campaignRoll20Ids: message.campaignRoll20Ids,
+      campaignId: message.campaignId,
+      hasError: hasError
+    };
+    this.redis.publish(PubChannels.StreamingStopped, returnPayload);
+  }
+
+  private async coverArea(message: RedisMessage): Promise<void> {
+
+    let hasError = false;
+    try {
+      await this.roll2OClient.coverArea(message.data.bbox)
+    } catch (e) {
+      hasError = true;
     }
   }
 }

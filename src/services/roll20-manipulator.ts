@@ -1,6 +1,6 @@
 import { EventEmitter } from "events";
 import { existsSync, promises } from "fs";
-import { Browser, Cookie, launch, Page } from "puppeteer";
+import { BoundingBox, Browser, Cookie, launch, Page } from "puppeteer";
 import * as debug0 from "debug";
 import { Roll20ManipulatorAPI } from "../@types/roll20-manipulator-API";
 import { injectable } from "inversify";
@@ -9,6 +9,7 @@ import { Roll20AppWindow } from "../@types/roll20-app-window";
 
 const debug = debug0("manipulator");
 
+class ZoomError extends Error {}
 export enum CameraSettings {
   NAMES = "names",
   SMALL = "small",
@@ -39,9 +40,6 @@ export interface Roll20ManipulatorOptions {
   sinkName?: string;
   defaultVolume?: number;
 }
-
-class ZoomError extends Error {}
-
 /**
  * Handling of the interaction with the roll20 website
  */
@@ -49,6 +47,8 @@ class ZoomError extends Error {}
 export class Roll20Manipulator extends EventEmitter
   implements Roll20ManipulatorAPI {
   private static readonly COOKIES_BACKUP_PATH = `${tmpdir()}/cookies`;
+  private static readonly MAX_ZOOM_PERCENTAGE = 250;
+  private static readonly MIN_ZOOM_PERCENTAGE = 10;
   /**
    * True if chrome is properly initialized
    * @private
@@ -84,20 +84,6 @@ export class Roll20Manipulator extends EventEmitter
      * @member options
      */
     this.options = Object.assign({}, defaultParameters, this.options);
-  }
-
-  /**
-   * Check if the given roll20 link is a valid one
-   * @param gameUrl
-   * @returns True if the link is valid
-   */
-  static checkGameURL(gameUrl: string): boolean {
-    const gameLinkTester = /^.*app\.roll20\.net\/join\/\d{5,}\/.*$/;
-    //If the roll20 link is not valid
-    if (!gameLinkTester.test(gameUrl)) {
-      throw new Error("The given roll20 link is not valid");
-    }
-    return true;
   }
 
   /**
@@ -217,14 +203,65 @@ export class Roll20Manipulator extends EventEmitter
   }
 
   async changeZoomLevel(targetZoomLevel: number): Promise<void> {
-    if (targetZoomLevel < 10 || targetZoomLevel > 256) {
+    if (
+      targetZoomLevel < Roll20Manipulator.MIN_ZOOM_PERCENTAGE ||
+      targetZoomLevel > Roll20Manipulator.MAX_ZOOM_PERCENTAGE
+    ) {
       throw new ZoomError("Invalid zoom level provided");
     }
-    await this.page.evaluate((targetZoomLevel) => {
+    await this.page.evaluate(targetZoomLevel => {
       $("#zoomslider")
         .data("uiSlider")
         .options.slide(null, { value: targetZoomLevel });
     }, targetZoomLevel);
+  }
+  getZoomForArea(area: BoundingBox, screen: BoundingBox): number {
+    const minZoomWidth = (screen.width / area.width) * 100;
+    const minZoomHeight = (screen.height / area.height) * 100;
+    return Math.floor(
+      Math.max(
+        Math.min(minZoomHeight, minZoomWidth),
+        Roll20Manipulator.MIN_ZOOM_PERCENTAGE
+      )
+    );
+  }
+  async moveToLocation(target: BoundingBox): Promise<void> {
+    await this.page.evaluate(
+      (x, y) => {
+        const wrapper = document.querySelector("#editor-wrapper");
+        console.log(
+          `top : ${y} - ${wrapper.scrollTop} --> ${y - wrapper.scrollTop}`
+        );
+        console.log(
+          `left : ${x} - ${wrapper.scrollLeft} --> ${x - wrapper.scrollLeft}`
+        );
+        wrapper.scrollTo({
+          behavior: "smooth",
+          top: y,
+          left: x
+        });
+      },
+      target.x,
+      target.y
+    );
+  }
+  async coverArea(area: BoundingBox): Promise<void> {
+    const screenBbox: BoundingBox = {
+      height: this.options.screenSize[1] - 80,
+      width: this.options.screenSize[0] - 30,
+      x: 0,
+      y: 0
+    };
+    const zoomLevel = this.getZoomForArea(area, screenBbox);
+    await this.changeZoomLevel(zoomLevel);
+    await new Promise( (res) => setTimeout(() => res(), 800));
+    await this.moveToLocation({
+      x: area.x * (zoomLevel / 100),
+      y: area.y * (zoomLevel / 100),
+      width: area.width,
+      height: area.height
+    });
+    //$.get("https://cdnjs.cloudflare.com/ajax/libs/fabric.js/4.0.0/fabric.min.js", null, eval)
   }
 
   /**

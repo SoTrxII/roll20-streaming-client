@@ -3,12 +3,12 @@ import { container } from "../inversify.config";
 import { Roll20ManipulatorAPI } from "../@types/roll20-manipulator-API";
 import { TYPES } from "../types";
 import { interfaces } from "inversify";
-import { Roll20Account, Roll20ManipulatorOptions } from "./roll20-manipulator";
 import * as config from "../../config.json";
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "fs";
-import { Cookie } from "puppeteer";
+import { BoundingBox, Cookie } from "puppeteer";
 import { hrtime } from "process";
 import Newable = interfaces.Newable;
+import { Roll20Account, Roll20ManipulatorOptions } from "./roll20-manipulator";
 
 describe("Roll20-manipulator", () => {
   const roll20Account: Roll20Account = {
@@ -142,6 +142,36 @@ describe("Roll20-manipulator", () => {
       roll2OManipulator.closeBrowser();
     });
   });
+  describe("Coordinates calulation", () => {
+    beforeAll(() => {
+      roll2OManipulator = new roll20ManipulatorConstructor(
+        roll20Account,
+        manipulatorOptions
+      );
+    });
+    it("Should be able to get the min zoom level required to cover a specific field area", () => {
+      const targetArea: BoundingBox = {
+        x: 152,
+        y: 516,
+        width: 1003,
+        height: 513
+      };
+      const baseArea: BoundingBox = {
+        width: 1200,
+        height: 690,
+        x: 0,
+        y: 0
+      };
+      const minZoom = roll2OManipulator.getZoomForArea(targetArea, baseArea);
+      expect(baseArea.width / (minZoom / 100)).toBeGreaterThanOrEqual(
+        targetArea.width
+      );
+      expect(baseArea.height / (minZoom / 100)).toBeGreaterThanOrEqual(
+        targetArea.height
+      );
+      console.log(minZoom);
+    });
+  });
   describe("Ajusting the zoom", () => {
     beforeAll(async () => {
       roll2OManipulator = new roll20ManipulatorConstructor(
@@ -162,6 +192,48 @@ describe("Roll20-manipulator", () => {
       await roll2OManipulator.changeZoomLevel(zLvl + 50);
       await new Promise((res, rej) => setTimeout(() => res(), 10000));
       await roll2OManipulator.changeZoomLevel(zLvl);
+    }, 100000);
+    it("Should be able to change the current zoom with coordinates as an input", async () => {
+      const targetArea: BoundingBox = {
+        height: 713,
+        width: 995,
+        x: 141,
+        y: 596
+      };
+      await roll2OManipulator.coverArea(targetArea);
+      //JQuery zoom slider only updates the zoom level text after the animation, wait for it t finish
+      await new Promise( (res) => setTimeout(() => res(), 5000));
+      expect(await roll2OManipulator.getZoomLevel()).toEqual(100);
+    }, 100000);
+    it("Should be able to adapt to new plays ara, no matter the aspect ratio and actual size", async () => {
+      const targetArea1: BoundingBox = {
+        x: 126,
+        y: 625,
+        width: 996,
+        height: 486
+      };
+      const targetArea2: BoundingBox = {
+        x: 960,
+        y: 367,
+        width: 598,
+        height: 306
+      };
+      const targetArea3: BoundingBox = {
+        x: 98,
+        y: 254,
+        width: 1697,
+        height: 828
+      };
+      await new Promise( (res) => setTimeout(() => res(), 10000));
+      await roll2OManipulator.coverArea(targetArea1);
+      //JQuery zoom slider only updates the zoom level text after the animation, wait for it t finish
+      await new Promise( (res) => setTimeout(() => res(), 5000));
+      expect(await roll2OManipulator.getZoomLevel()).toEqual(125);
+      await roll2OManipulator.coverArea(targetArea2);
+      await new Promise( (res) => setTimeout(() => res(), 5000));
+      await roll2OManipulator.coverArea(targetArea3);
+      await new Promise( (res) => setTimeout(() => res(), 5000));
+      //expect(await roll2OManipulator.getZoomLevel()).toEqual(128);
     }, 100000);
     afterEach(() => {
       //roll2OManipulator.closeBrowser();
