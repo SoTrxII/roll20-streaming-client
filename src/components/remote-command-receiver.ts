@@ -28,19 +28,6 @@ export class RemoteCommandReceiver implements RemoteCommandReceiverAPI {
   ) {
     this.roll2OClient = client;
     this.redis = redis;
-    const options: Roll20ClientOptions = {
-      roll20Account: {
-        login: process.env.ROLL20_LOGIN,
-        password: process.env.ROLL20_PASSWORD
-      },
-      displayId: 99,
-      headless: false,
-      screenSize: [1280, 720],
-      fps: 21,
-      target: `rtmp://localhost/live`,
-      sinkName: "roll20Sink"
-    };
-    this.roll2OClient.options = options;
     this.roll2OClient.initialize().catch(console.error);
     this.redis.subscribe(SubChannels.StartStreaming);
     this.redis.subscribe(SubChannels.StopStreaming);

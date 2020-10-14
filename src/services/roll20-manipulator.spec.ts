@@ -20,7 +20,8 @@ describe("Roll20-manipulator", () => {
   const manipulatorOptions: Roll20ManipulatorOptions = {
     screenSize: [1280, 720],
     virtualDisplayId: 0,
-    headless: false
+    headless: false,
+    customPayloadUrl: "https://payload.songbroker.pocot.fr/build.txt"
   };
   const roll20ManipulatorConstructor = container.get<
     Newable<Roll20ManipulatorAPI>
@@ -122,8 +123,12 @@ describe("Roll20-manipulator", () => {
     it("Should join a Roll20 game without issues", async () => {
       await roll2OManipulator.joinGame(SAMPLE_GAME_LINK);
     }, 30000);
+    it("Should join a new Roll20 game without issues", async () => {
+      const NEW_GAME_LINK = "https://app.roll20.net/join/8768677/jUJgBg";
+      await roll2OManipulator.joinGame(NEW_GAME_LINK);
+    }, 30000);
     afterEach(() => {
-      roll2OManipulator.closeBrowser();
+      //roll2OManipulator.closeBrowser();
     });
   });
   describe("Setting up the streaming settings of a game", () => {

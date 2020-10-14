@@ -1,4 +1,4 @@
-import { Container } from "inversify";
+import { Container, interfaces } from "inversify";
 import { TYPES } from "./types";
 import { VirtualScreenAPI } from "./@types/virtual-screen-API";
 import { VirtualScreen } from "./services/virtual-screen";
@@ -12,6 +12,7 @@ import { RedisAPI } from "./@types/redis-API";
 import { RedisService } from "./services/redis";
 import { RemoteCommandReceiverAPI } from "./@types/remote-command-receiver-API";
 import { RemoteCommandReceiver } from "./components/remote-command-receiver";
+import Newable = interfaces.Newable;
 
 export const container = new Container();
 
@@ -23,7 +24,28 @@ container
   .bind<Roll20ManipulatorAPI>(TYPES.Roll20ManipulatorService)
   .toConstructor(Roll20Manipulator);
 
-container.bind<Roll20ClientAPI>(TYPES.Roll20Client).to(Roll20Client);
+container.bind<Roll20ClientAPI>(TYPES.Roll20Client).toConstantValue(
+  new Roll20Client(
+    container.get<Newable<VirtualScreenAPI>>(TYPES.VirtualScreenService),
+    container.get<Newable<RecorderAPI>>(TYPES.RecordingService),
+    container.get<Newable<Roll20ManipulatorAPI>>(
+      TYPES.Roll20ManipulatorService
+    ),
+    {
+      roll20Account: {
+        login: process.env.ROLL20_LOGIN,
+        password: process.env.ROLL20_PASSWORD
+      },
+      displayId: 99,
+      headless: false,
+      screenSize: [1280, 720],
+      fps: 21,
+      target: process.env.STREAMING_TARGET,
+      sinkName: "roll20Sink",
+      customPayloadUrl: process.env.CUSTOM_PAYLOAD_URL
+    }
+  )
+);
 container.bind<RedisAPI>(TYPES.RedisService).toConstantValue(
   new RedisService({
     host: process.env.REDIS_HOST,
@@ -32,4 +54,4 @@ container.bind<RedisAPI>(TYPES.RedisService).toConstantValue(
 );
 container
   .bind<RemoteCommandReceiverAPI>(TYPES.RemoteCommandReceiver)
-  .to(RemoteCommandReceiver);
+  .toConstantValue(RemoteCommandReceiver);

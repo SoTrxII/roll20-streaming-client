@@ -39,6 +39,7 @@ export interface Roll20ManipulatorOptions {
   headless?: boolean;
   sinkName?: string;
   defaultVolume?: number;
+  customPayloadUrl?: string;
 }
 /**
  * Handling of the interaction with the roll20 website
@@ -83,7 +84,7 @@ export class Roll20Manipulator extends EventEmitter
     /**
      * @member options
      */
-    this.options = Object.assign({}, defaultParameters, this.options);
+    this.options = Object.assign({}, defaultParameters, options);
   }
 
   /**
@@ -126,13 +127,21 @@ export class Roll20Manipulator extends EventEmitter
     await this.page.goto(editorUrl, {
       waitUntil: "domcontentloaded"
     });
+
+    //If it's new game, going directly to the editor should lead to an error.
+    //Properly join the game and retry
+    if(this.page.url().includes("setcampaign")){
+      await this.page.goto(gameUrl)
+      await this.page.goto(editorUrl, {
+        waitUntil: "domcontentloaded"
+      });
+    }
     /**
      * Emitted when the manipulator successfully joined a roll20 Campaign
      * @event Roll20Manipulator#joined
      */
     this.emit("joined");
   }
-
   async setupStreamingSetting(): Promise<void> {
     try {
       await this.page.waitForNavigation({
@@ -450,7 +459,7 @@ export class Roll20Manipulator extends EventEmitter
    * Boot up the chrome instance and initialize pages
    */
   async initializeBrowser(): Promise<void> {
-    console.log(`DISPLAY : ${this.options.virtualDisplayId}`)
+    console.log(`DISPLAY : ${this.options.virtualDisplayId}`);
     this.browser = await launch({
       headless: this.options.headless,
       env: Object.assign({}, process.env, {
@@ -494,7 +503,7 @@ export class Roll20Manipulator extends EventEmitter
           waitUntil: "domcontentloaded"
         });
         //Should be redirected to the editor page when successfull
-        if(this.options.loginPage !== this.page.url()){
+        if (this.options.loginPage !== this.page.url()) {
           return;
         }
       }
@@ -520,9 +529,11 @@ export class Roll20Manipulator extends EventEmitter
   }
 
   private async injectCustomPayload() {
-    await this.page.evaluate(() => {
-      $.get("https://payload.songbroker.pocot.fr/build.txt", null, eval);
-    });
+    if (this.options.customPayloadUrl !== undefined) {
+      await this.page.evaluate((customPayload: string) => {
+        $.get(customPayload, null, eval);
+      }, this.options.customPayloadUrl);
+    }
   }
 
   private areExpired(cookies: Cookie[]): boolean {

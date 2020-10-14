@@ -17,6 +17,7 @@ export interface Roll20ClientOptions {
   displayId?: number;
   headless?: boolean;
   sinkName?: string;
+  customPayloadUrl?: string;
 }
 class InvalidClientStateError extends Error {}
 @injectable()
@@ -36,11 +37,13 @@ export class Roll20Client implements Roll20ClientAPI {
     @inject(TYPES.RecordingService)
     recordingConstructor: Newable<RecorderAPI>,
     @inject(TYPES.Roll20ManipulatorService)
-    roll20ManipulatorConstructor: Newable<Roll20ManipulatorAPI>
+    roll20ManipulatorConstructor: Newable<Roll20ManipulatorAPI>,
+    options: Roll20ClientOptions
   ) {
     this.virtualScreenConstructor = virtualScreenConstructor;
     this.recordingServiceConstructor = recordingConstructor;
     this.roll20ServiceConstructor = roll20ManipulatorConstructor;
+    this.options = options;
   }
 
   protected _options: Roll20ClientOptions = {
@@ -73,7 +76,8 @@ export class Roll20Client implements Roll20ClientAPI {
         screenSize: this._options.screenSize,
         virtualDisplayId: this._options.displayId,
         headless: this._options.headless,
-        sinkName: this._options.sinkName
+        sinkName: this._options.sinkName,
+        customPayloadUrl: this._options.customPayloadUrl
       }
     );
 

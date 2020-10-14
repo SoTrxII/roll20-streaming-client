@@ -1,10 +1,11 @@
 # Roll 20 streaming client
 
 A remote-controlled Roll20 client used to stream roll20 audio and video feeds to an 
-RTMP server (Youtube, Twitch, or otherwise).
+RTMP server (Youtube, Twitch, or a custom one).
 
-Be aware, this is something created for my own personal use, it may not be easy to run, let alone tune for your use cases.
-That being said, feel free to contribute or suggest new features.
+This is something I created to record some tabletop RPG games. 
+This is used along with [Pandora](https://github.com/SoTrxII/Pandora) to record both audio/video from Roll20 and audio
+from Discord, to be later on mixed together.
 
 ## Features 
  + Join Roll20 games using a user account.
@@ -23,9 +24,6 @@ Using Xvfb allows for headless devices such as VPS to run this script.
 
 All communications are handled via Redis.
 
-
-## Limitations
- + Joining a game for the first time isn't handled  
 
 ## Using the project
 
@@ -46,7 +44,6 @@ pacmd load-module module-loopback sink=$SINK_NAME
 #### Redis
 
 A Redis instance is used to handle communications. 
-This instance credentials will be used later on the config step.
 
 ### Running the program
 
@@ -55,16 +52,16 @@ This instance credentials will be used later on the config step.
 npm install
 npm build 
 # Removing devdependencies once the build process is done
-npm prune --production  
-npm start 
+npm prune --production  && npm install dotenv-safe
+npm start:dev
 ```
 Once you've reached this step, a chrome instance should be up and running, already logged in using the credentials you
 provided.
 
 ## About Docker 
 
-Although I'm a big fan of Docker myself, and there is a Dockerfile provided, **Docker shouldn't be used** to run 
+Although I'm a big fan of Docker, and there is a Dockerfile provided, **Docker shouldn't be used** to run 
 this project at this state. The reason is Pulseaudio, the sound server currently used. Pulseaudio doesn't play nicely 
 when used within a container.
 Sharing the host Pulseaudio via a cookie is pretty unstable, and the cookie would sometimes just timeout for no reason.
-I'm currently experimenting with sharing it over the network, .     
+I'm currently experimenting with sharing it over the network, or even going back to ALSA.    
