@@ -54,4 +54,4 @@ container.bind<RedisAPI>(TYPES.RedisService).toConstantValue(
 );
 container
   .bind<RemoteCommandReceiverAPI>(TYPES.RemoteCommandReceiver)
-  .toConstantValue(RemoteCommandReceiver);
+  .to(RemoteCommandReceiver);

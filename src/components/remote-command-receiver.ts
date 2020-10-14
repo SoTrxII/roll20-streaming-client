@@ -31,6 +31,7 @@ export class RemoteCommandReceiver implements RemoteCommandReceiverAPI {
     this.roll2OClient.initialize().catch(console.error);
     this.redis.subscribe(SubChannels.StartStreaming);
     this.redis.subscribe(SubChannels.StopStreaming);
+    this.redis.subscribe(SubChannels.MovePlayingField);
     this.redis.on("message", e => this.messageBroker(e[0], JSON.parse(e[1])));
   }
 
