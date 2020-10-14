@@ -25,11 +25,12 @@ describe("Recorder", () => {
     });
     it("Should be able to record the screen", async () => {
       recorder.startRecording();
-      await new Promise((res, rej) => setTimeout(() => res(), 10000));
+      await new Promise(res => setTimeout(() => res(), 10000));
       recorder.stopRecording();
     }, 15000);
   });
-  describe("Record to a stream", () => {
+  // This test requires the custom RTMP server to be up, skip it in the global test run
+  describe.skip("Record to a stream", () => {
     const recordingOptions: ScreenRecorderOptions = {
       fps: 21,
       screenSize: [1280, 720],

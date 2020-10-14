@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { RedisService } from "./redis";
 
-describe("Redis Pub/Sub Service", () => {
+describe.skip("Redis Pub/Sub Service", () => {
   const redis = new RedisService();
   const CHANNEL = "rollsUpdateRequest";
   const PAYLOAD = {

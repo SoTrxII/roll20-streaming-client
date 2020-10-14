@@ -7,13 +7,14 @@ import * as config from "../../config.json";
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "fs";
 import { BoundingBox, Cookie } from "puppeteer";
 import { hrtime } from "process";
+require('dotenv-safe').config();
 import Newable = interfaces.Newable;
 import { Roll20Account, Roll20ManipulatorOptions } from "./roll20-manipulator";
 
 describe("Roll20-manipulator", () => {
   const roll20Account: Roll20Account = {
-    login: config.Roll20.login,
-    password: config.Roll20.password
+    login: process.env.ROLL20_LOGIN,
+    password: process.env.ROLL20_PASSWORD
   };
   const SAMPLE_GAME_LINK = "https://app.roll20.net/join/2883710/mEiLZw";
   const manipulatorOptions: Roll20ManipulatorOptions = {
@@ -28,7 +29,7 @@ describe("Roll20-manipulator", () => {
 
   describe("Keeping the instance and cookies up", () => {
     const cookiesPath = "/tmp/cookies";
-    beforeAll(async () => {
+    beforeEach(async () => {
       roll2OManipulator = new roll20ManipulatorConstructor(
         roll20Account,
         manipulatorOptions
@@ -56,7 +57,7 @@ describe("Roll20-manipulator", () => {
             .map(c => c.expires)
             .every(e => new Date(e * 1000) < new Date())
         );
-        expect(execTime).toBeGreaterThan(10);
+        expect(execTime).toBeGreaterThan(2);
       }, 30000);
 
       afterEach(async () => {
@@ -118,7 +119,7 @@ describe("Roll20-manipulator", () => {
       await roll2OManipulator.initializeBrowser();
       await roll2OManipulator.login();
     }, 60000);
-    it("Should join a Roll20 game with issues", async () => {
+    it("Should join a Roll20 game without issues", async () => {
       await roll2OManipulator.joinGame(SAMPLE_GAME_LINK);
     }, 30000);
     afterEach(() => {
@@ -139,7 +140,7 @@ describe("Roll20-manipulator", () => {
       await roll2OManipulator.setupStreamingSetting();
     }, 60000);
     afterEach(() => {
-      roll2OManipulator.closeBrowser();
+      //roll2OManipulator.closeBrowser();
     });
   });
   describe("Coordinates calulation", () => {
@@ -173,7 +174,7 @@ describe("Roll20-manipulator", () => {
     });
   });
   describe("Ajusting the zoom", () => {
-    beforeAll(async () => {
+    beforeEach(async () => {
       roll2OManipulator = new roll20ManipulatorConstructor(
         roll20Account,
         manipulatorOptions
@@ -185,13 +186,20 @@ describe("Roll20-manipulator", () => {
     }, 80000);
     it("Should be able to get the current zoom level", async () => {
       const zLvl = await roll2OManipulator.getZoomLevel();
+      expect(zLvl).toEqual(100);
       console.log(zLvl);
     }, 60000);
     it("Should be able to change the current zoom level", async () => {
       const zLvl = await roll2OManipulator.getZoomLevel();
       await roll2OManipulator.changeZoomLevel(zLvl + 50);
-      await new Promise((res, rej) => setTimeout(() => res(), 10000));
+      await new Promise(res => setTimeout(() => res(), 10000));
+      const zLvl2 = await roll2OManipulator.getZoomLevel();
+      expect(zLvl2).toEqual(zLvl + 50);
       await roll2OManipulator.changeZoomLevel(zLvl);
+      await new Promise(res => setTimeout(() => res(), 10000));
+      const zLvl3 = await roll2OManipulator.getZoomLevel();
+      expect(zLvl3).toEqual(zLvl );
+
     }, 100000);
     it("Should be able to change the current zoom with coordinates as an input", async () => {
       const targetArea: BoundingBox = {
@@ -203,7 +211,7 @@ describe("Roll20-manipulator", () => {
       await roll2OManipulator.coverArea(targetArea);
       //JQuery zoom slider only updates the zoom level text after the animation, wait for it t finish
       await new Promise( (res) => setTimeout(() => res(), 5000));
-      expect(await roll2OManipulator.getZoomLevel()).toEqual(100);
+      expect(await roll2OManipulator.getZoomLevel()).toEqual(89);
     }, 100000);
     it("Should be able to adapt to new plays ara, no matter the aspect ratio and actual size", async () => {
       const targetArea1: BoundingBox = {
@@ -236,7 +244,7 @@ describe("Roll20-manipulator", () => {
       //expect(await roll2OManipulator.getZoomLevel()).toEqual(128);
     }, 100000);
     afterEach(() => {
-      //roll2OManipulator.closeBrowser();
+      roll2OManipulator.closeBrowser();
     });
   });
 });

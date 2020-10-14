@@ -1,5 +1,48 @@
+##############
+### FFMPEG ###
+##############
+# First, we need to build a custom version of FFMPEG as the alpine package "ffmpeg" has no support for pulseaudio.
+FROM node:current-alpine as ffmpegbuilder
+RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" > /etc/apk/repositories \
+        && echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories \
+        && echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories \
+        && echo "http://dl-cdn.alpinelinux.org/alpine/v3.11/main" >> /etc/apk/repositories \
+        && apk upgrade -U -a \
+        && apk add alpine-sdk automake cmake git libass-dev libtool texinfo wget yasm nasm x264-dev lame-dev opus-dev libxcb-dev \
+         pulseaudio-dev gnutls-dev libunistring-dev fdk-aac fdk-aac-dev libvorbis-dev libxcb\
+        && mkdir -p ~/ffmpeg_sources ~/bin \
+        && cd ~/ffmpeg_sources \
+        && wget -O ffmpeg-snapshot.tar.bz2 https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2 \
+        && tar xjvf ffmpeg-snapshot.tar.bz2 \
+        && cd ffmpeg \
+        && PATH="$HOME/bin:$PATH" PKG_CONFIG_PATH="$HOME/ffmpeg_build/lib/pkgconfig" ./configure \
+         --prefix="$HOME/ffmpeg_build" \
+         --pkg-config-flags="--static" \
+         --extra-cflags="-I$HOME/ffmpeg_build/include" \
+         --extra-ldflags="-L$HOME/ffmpeg_build/lib" \
+         --extra-libs="-lpthread -lm" \
+         --bindir="$HOME/bin" \
+         --enable-gpl \
+         --enable-gnutls \
+         --enable-libass \
+         --enable-libfdk-aac \
+         --enable-libfreetype \
+         --enable-libmp3lame \
+         --enable-libopus \
+         --enable-libxcb \
+         --enable-libpulse \
+         --enable-libvorbis \
+         --enable-libx264 \
+         --enable-nonfree \
+       && PATH="$HOME/bin:$PATH" make -j$((`nproc`+1)) \
+       && make install \
+       && hash -r
+
+##############
+### Build ###
+##############
 # Transpile the typescript into plain Javacript, cache dependencies
-FROM ubuntu:latest as build
+FROM node:current-alpine as build
 WORKDIR /app
 ENV PATH /app/node_modules/.bin:$PATH
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD 1
@@ -15,7 +58,7 @@ RUN npm run build
 ############
 ### PROD ###
 ############
-FROM ubuntu:latest
+FROM node:current-alpine
 #Install
 RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" > /etc/apk/repositories \
     && echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories \

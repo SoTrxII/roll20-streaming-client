@@ -10,7 +10,6 @@ import { Roll20Client } from "./components/roll20-client";
 import { Roll20ClientAPI } from "./@types/roll20-client-API";
 import { RedisAPI } from "./@types/redis-API";
 import { RedisService } from "./services/redis";
-import * as config from "../config.json";
 import { RemoteCommandReceiverAPI } from "./@types/remote-command-receiver-API";
 import { RemoteCommandReceiver } from "./components/remote-command-receiver";
 
@@ -27,10 +26,8 @@ container
 container.bind<Roll20ClientAPI>(TYPES.Roll20Client).to(Roll20Client);
 container.bind<RedisAPI>(TYPES.RedisService).toConstantValue(
   new RedisService({
-    host: config.Redis.host,
-    // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-    // @ts-ignore
-    lazyConnect: config.Redis.lazyConnect
+    host: process.env.REDIS_HOST,
+    lazyConnect: true
   })
 );
 container

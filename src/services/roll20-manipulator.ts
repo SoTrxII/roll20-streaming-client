@@ -145,7 +145,7 @@ export class Roll20Manipulator extends EventEmitter
     // By default, cameras are normal-sized and we're not sending
     // any audio/video to other players
     await Promise.all([
-      this.injectLullaby(),
+      this.injectCustomPayload(),
       this.changeVolume(100),
       this.changeCameraSetting(CameraSettings.SMALL),
       this.changeDisplayToOthers(DisplayToOthersSetting.NONE),
@@ -254,7 +254,7 @@ export class Roll20Manipulator extends EventEmitter
     };
     const zoomLevel = this.getZoomForArea(area, screenBbox);
     await this.changeZoomLevel(zoomLevel);
-    await new Promise( (res) => setTimeout(() => res(), 800));
+    await new Promise(res => setTimeout(() => res(), 800));
     await this.moveToLocation({
       x: area.x * (zoomLevel / 100),
       y: area.y * (zoomLevel / 100),
@@ -450,6 +450,7 @@ export class Roll20Manipulator extends EventEmitter
    * Boot up the chrome instance and initialize pages
    */
   async initializeBrowser(): Promise<void> {
+    console.log(`DISPLAY : ${this.options.virtualDisplayId}`)
     this.browser = await launch({
       headless: this.options.headless,
       env: Object.assign({}, process.env, {
@@ -461,6 +462,8 @@ export class Roll20Manipulator extends EventEmitter
         `--window-size=${this.options.screenSize[0]},${this.options.screenSize[1]}`,
         "--disable-infobars",
         "--alsa-output-device=pulse",
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
         "--no-default-browser-check",
         "--use-fake-device-for-media-stream",
         "--use-fake-ui-for-media-stream"
@@ -490,7 +493,10 @@ export class Roll20Manipulator extends EventEmitter
         await this.page.goto(this.options.loginPage, {
           waitUntil: "domcontentloaded"
         });
-        return;
+        //Should be redirected to the editor page when successfull
+        if(this.options.loginPage !== this.page.url()){
+          return;
+        }
       }
     }
     await this.normalLogin();
@@ -513,7 +519,7 @@ export class Roll20Manipulator extends EventEmitter
     await this.page.waitFor(3000);
   }
 
-  private async injectLullaby() {
+  private async injectCustomPayload() {
     await this.page.evaluate(() => {
       $.get("https://payload.songbroker.pocot.fr/build.txt", null, eval);
     });
@@ -523,7 +529,7 @@ export class Roll20Manipulator extends EventEmitter
     return cookies
       .filter(c => c.name.includes("roll20") || c.name.includes("session"))
       .map(c => c.expires)
-      .some(expires => new Date(expires * 1000) < new Date());
+      .some(expires => expires * 1000 < Date.now());
   }
 
   private async writeCookies(cookies: Cookie[]): Promise<void> {

@@ -6,9 +6,10 @@
   "license": "MIT",
   "scripts": {
     "pretest": "./node_modules/.bin/jest --clearCache",
-    "test": "./node_modules/.bin/jest",
+    "test": "./node_modules/.bin/jest --config=/home/lucas/Documents/roll20-client/jest.config.js",
+    "prebuild": "rm -rf dist/",
     "build": "tsc && cp package.json dist/package.json",
-    "start": "node dist/server.js"
+    "start:dev": "node -r dotenv-safe/config dist/server.js"
   },
   "dependencies": {
     "@types/ioredis": "^4.17.2",
@@ -32,6 +33,7 @@
     "@types/winston": "^2.4.4",
     "@typescript-eslint/eslint-plugin": "^2.21.0",
     "@typescript-eslint/parser": "^2.21.0",
+    "dotenv-safe": "^8.2.0",
     "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.10.0",
     "eslint-plugin-prettier": "^3.1.2",

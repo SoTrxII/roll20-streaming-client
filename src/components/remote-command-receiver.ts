@@ -4,7 +4,6 @@ import { TYPES } from "../types";
 import { Roll20ClientAPI } from "../@types/roll20-client-API";
 import { RedisAPI } from "../@types/redis-API";
 import { Roll20ClientOptions } from "./roll20-client";
-import * as config from "../../config.json";
 import { RedisMessage } from "../@types/redis-message";
 
 export enum SubChannels {
@@ -31,10 +30,10 @@ export class RemoteCommandReceiver implements RemoteCommandReceiverAPI {
     this.redis = redis;
     const options: Roll20ClientOptions = {
       roll20Account: {
-        login: config.Roll20.login,
-        password: config.Roll20.password
+        login: process.env.ROLL20_LOGIN,
+        password: process.env.ROLL20_PASSWORD
       },
-      displayId: 0,
+      displayId: 99,
       headless: false,
       screenSize: [1280, 720],
       fps: 21,
@@ -55,6 +54,8 @@ export class RemoteCommandReceiver implements RemoteCommandReceiverAPI {
       await this.startStreaming(message);
     } else if (channel === SubChannels.StopStreaming) {
       await this.stopStreaming(message);
+    } else if (channel === SubChannels.MovePlayingField) {
+      await this.coverArea(message);
     }
   }
 
@@ -92,12 +93,11 @@ export class RemoteCommandReceiver implements RemoteCommandReceiverAPI {
   }
 
   private async coverArea(message: RedisMessage): Promise<void> {
-
-    let hasError = false;
     try {
-      await this.roll2OClient.coverArea(message.data.bbox)
+      //Pure Fire & Forget, don't return anything
+      await this.roll2OClient.coverArea(message.data.bbox);
     } catch (e) {
-      hasError = true;
+      console.error(e);
     }
   }
 }

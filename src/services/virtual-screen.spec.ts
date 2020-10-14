@@ -5,6 +5,7 @@ import { TYPES } from "../types";
 import { VirtualScreen, VirtualScreenOptions } from "./virtual-screen";
 import { interfaces } from "inversify";
 import Newable = interfaces.Newable;
+import { execSync } from "child_process";
 
 describe("Virtual Screen", () => {
   const virtualScreenConstructor = container.get<Newable<VirtualScreenAPI>>(
@@ -12,7 +13,7 @@ describe("Virtual Screen", () => {
   );
   let virtualScreen: VirtualScreenAPI;
   describe("Using a non headless device", () => {
-    beforeAll(() => {
+    beforeEach(() => {
       const options: VirtualScreenOptions = {
         screenSize: [1280, 720],
         screenId: 0
@@ -26,33 +27,38 @@ describe("Virtual Screen", () => {
     });
   });
   describe("Using a headless device", () => {
-    const SAMPLE_SCREEN_ID = 99;
-    beforeAll(() => {
+    let screenId;
+    beforeEach(() => {
+      screenId = Math.floor(Math.random() * Math.floor(100)) + 1;
       const options: VirtualScreenOptions = {
         screenSize: [1280, 720],
-        screenId: SAMPLE_SCREEN_ID
+        screenId: screenId
       };
       virtualScreen = new virtualScreenConstructor(options);
     });
+
     it("Should be starting up a new screen buffer", async () => {
       await virtualScreen.startVirtualScreen();
-      expect(VirtualScreen.checkAvailableScreen(SAMPLE_SCREEN_ID)).toEqual(
+      expect(VirtualScreen.checkAvailableScreen(screenId)).toEqual(
         false
       );
       virtualScreen.stopVirtualScreen();
-      expect(VirtualScreen.checkAvailableScreen(SAMPLE_SCREEN_ID)).toEqual(
+      expect(VirtualScreen.checkAvailableScreen(screenId)).toEqual(
         true
       );
     });
     it("Should ignore attempts to start a screen buffer on the same id more than once", async () => {
       await virtualScreen.startVirtualScreen();
-      expect(VirtualScreen.checkAvailableScreen(SAMPLE_SCREEN_ID)).toEqual(
+      expect(VirtualScreen.checkAvailableScreen(screenId)).toEqual(
         false
       );
       await virtualScreen.startVirtualScreen();
-      expect(VirtualScreen.checkAvailableScreen(SAMPLE_SCREEN_ID)).toEqual(
+      expect(VirtualScreen.checkAvailableScreen(screenId)).toEqual(
         false
       );
+    });
+    afterEach(() => {
+      virtualScreen.stopVirtualScreen();
     });
   });
 });
