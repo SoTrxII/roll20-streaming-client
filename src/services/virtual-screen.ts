@@ -17,11 +17,6 @@ export class VirtualScreen implements VirtualScreenAPI {
   };
   constructor(options: VirtualScreenOptions) {
     this.options = Object.assign({}, this.options, options);
-    if (this.options.screenId !== 0 && !VirtualScreen.checkXfvb()) {
-      throw new VirtualScreenError(
-        "A non-zero screen id is chosen but Xvfb is not installed on the host!"
-      );
-    }
   }
 
   /**
