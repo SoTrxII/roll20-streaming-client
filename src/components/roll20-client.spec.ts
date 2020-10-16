@@ -55,8 +55,8 @@ describe("Roll20 Client", () => {
     }, 60000);
     it("Should start streaming to the RTMP server", async () => {
       await roll20Client.startStreamingGame(SAMPLE_GAME_LINK);
-      await new Promise((res, rej) => setTimeout(() => res(), 600000));
-      //await roll20Client.stopStreamingGame();
+      await new Promise((res, rej) => setTimeout(() => res(), 1000));
+      const res = await roll20Client.stopStreamingGame();
     }, 120000);
   });
 });

@@ -42,7 +42,7 @@ describe("Remote Command Receiver", () => {
       const answer = (await redisProm) as RedisMessage;
 
       expect(answer.hasError).toEqual(false);
-      await new Promise((res, _) => setTimeout(() => res(), 30000));
+      await new Promise((res, _) => setTimeout(() => res(), 10000));
       redis.publish(SubChannels.StopStreaming, message);
       const redisProm2 = new Promise((res, rej) => {
         redis.subscribe(PubChannels.StreamingStopped);
@@ -58,7 +58,8 @@ describe("Remote Command Receiver", () => {
         }, 30000);
       });
 
-      await redisProm2;
+      const res = await redisProm2;
+      console.log(res);
     }, 180000);
     it("Two in a row", async () => {
       const message: RedisMessage = {

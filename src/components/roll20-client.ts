@@ -104,11 +104,13 @@ export class Roll20Client implements Roll20ClientAPI {
 
   async stopStreamingGame(): Promise<AccurateTime> {
     const release = await this.recordingLock.acquire();
+    let startDate;
     try {
-      return await this._stopStreamingGame();
+      startDate =  await this._stopStreamingGame();
     } finally {
       release();
     }
+    return startDate;
   }
 
   async coverArea(target: BoundingBox): Promise<void> {
