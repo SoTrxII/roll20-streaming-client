@@ -1,5 +1,6 @@
 export interface RecorderAPI {
   startRecording(): void;
 
-  stopRecording(): void;
+  stopRecording(): AccurateTime;
 }
+type AccurateTime = [number, number];

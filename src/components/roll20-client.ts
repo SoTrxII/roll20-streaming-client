@@ -3,11 +3,11 @@ import { TYPES } from "../types";
 import { Mutex } from "async-mutex";
 import { VirtualScreenAPI } from "../@types/virtual-screen-API";
 import { Roll20ManipulatorAPI } from "../@types/roll20-manipulator-API";
-import { RecorderAPI } from "../@types/recorder";
+import { AccurateTime, RecorderAPI } from "../@types/recorder";
 import { Roll20Account } from "../services/roll20-manipulator";
 import { Roll20ClientAPI } from "../@types/roll20-client-API";
 import Newable = interfaces.Newable;
-import {BoundingBox} from "puppeteer";
+import { BoundingBox } from "puppeteer";
 
 export interface Roll20ClientOptions {
   screenSize?: [number, number];
@@ -102,10 +102,10 @@ export class Roll20Client implements Roll20ClientAPI {
     }
   }
 
-  async stopStreamingGame(): Promise<void> {
+  async stopStreamingGame(): Promise<AccurateTime> {
     const release = await this.recordingLock.acquire();
     try {
-      await this._stopStreamingGame();
+      return await this._stopStreamingGame();
     } finally {
       release();
     }
@@ -129,10 +129,11 @@ export class Roll20Client implements Roll20ClientAPI {
     this.roll20Service.setupStreamingSetting().catch(console.error);
   }
 
-  private async _stopStreamingGame(): Promise<void> {
+  private async _stopStreamingGame(): Promise<AccurateTime> {
     if (this.isRecording) {
-      this.recordingService.stopRecording();
+      const startDate = this.recordingService.stopRecording();
       this.isRecording = false;
+      return startDate;
     }
   }
 }

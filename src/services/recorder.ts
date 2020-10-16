@@ -1,8 +1,9 @@
-import { RecorderAPI } from "../@types/recorder";
+import {AccurateTime, RecorderAPI} from "../@types/recorder";
 import { injectable } from "inversify";
 import * as ffmpeg from "fluent-ffmpeg";
 import { FfmpegCommand } from "fluent-ffmpeg";
 import { EventEmitter } from "events";
+import { hrtime } from 'process';
 
 export interface ScreenRecorderOptions {
   screenSize?: [number, number];
@@ -28,6 +29,7 @@ export class Recorder extends EventEmitter implements RecorderAPI {
   private isKilledOnPurpose: boolean;
   private recordingProcess: FfmpegCommand;
   private sinkMonitor: string;
+  private startDate: AccurateTime;
 
   constructor(options?: ScreenRecorderOptions) {
     super();
@@ -54,6 +56,7 @@ export class Recorder extends EventEmitter implements RecorderAPI {
     this.recordingProcess
       .on("start", commandLine => {
         console.log(commandLine);
+        this.startDate = hrtime();
         this.emit("start", commandLine);
       })
       .on("stdout", stdoutLine => {
@@ -95,9 +98,10 @@ export class Recorder extends EventEmitter implements RecorderAPI {
       .save(this.options.target);
   }
 
-  stopRecording(): void {
+  stopRecording(): AccurateTime {
     //Mask the exit error as we are killing it on purpose.
     this.isKilledOnPurpose = true;
     this.recordingProcess.kill("SIGKILL");
+    return this.startDate;
   }
 }

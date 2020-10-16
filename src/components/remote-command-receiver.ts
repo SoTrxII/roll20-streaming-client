@@ -66,13 +66,14 @@ export class RemoteCommandReceiver implements RemoteCommandReceiverAPI {
 
   private async stopStreaming(message: RedisMessage): Promise<void> {
     let hasError = false;
+    let startDate = null;
     try {
-      await this.roll2OClient.stopStreamingGame();
+      startDate = await this.roll2OClient.stopStreamingGame();
     } catch (e) {
       hasError = true;
     }
     const returnPayload: RedisMessage = {
-      data: null,
+      data: { startDate: startDate },
       campaignRoll20Ids: message.campaignRoll20Ids,
       campaignId: message.campaignId,
       hasError: hasError
