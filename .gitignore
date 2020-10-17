@@ -5,7 +5,7 @@ config.json
 *.mp3
 node_modules/
 database/database_*
-*.png
+src/*.png
 *.gif
 ex_*
 yarn-error.log

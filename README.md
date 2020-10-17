@@ -14,8 +14,7 @@ from Discord, to be later on mixed together.
 - Tweaking Roll20 UI to maximize field view, removing any unnecessary UI widget for a recording,
   such as Zoom Level adjustment or drawing tools
 - Inject custom JS client code into the Roll20 Window to customize it.
-- Zoom in and out, move the recorded area with Redis commands.
-  ![zoom](assets/images/zoom.gif)
+- Zoom in and out, move the recorded area with Redis messages.
 
 ## Usage
 
