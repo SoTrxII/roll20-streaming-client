@@ -57,8 +57,6 @@ export class RemoteCommandReceiver implements RemoteCommandReceiverAPI {
 
     const returnPayload: RedisMessage = {
       data: null,
-      campaignRoll20Ids: message.campaignRoll20Ids,
-      campaignId: message.campaignId,
       hasError: hasError
     };
     this.redis.publish(PubChannels.StreamingBegan, returnPayload);
@@ -74,8 +72,6 @@ export class RemoteCommandReceiver implements RemoteCommandReceiverAPI {
     }
     const returnPayload: RedisMessage = {
       data: { startDate: startDate },
-      campaignRoll20Ids: message.campaignRoll20Ids,
-      campaignId: message.campaignId,
       hasError: hasError
     };
     this.redis.publish(PubChannels.StreamingStopped, returnPayload);
