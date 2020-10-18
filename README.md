@@ -74,6 +74,9 @@ export interface Bbox{
   height: number
 }
 ```
+Now, sending Redis commands whilst playing isn't very enjoyable nor efficient.
+So, how to ensure that the client automatically sees what's important ? 
+Here's another project for this specific purpose : [field-broker](https://github.com/SoTrxII/field-broker). 
 
 ## Installation
 
